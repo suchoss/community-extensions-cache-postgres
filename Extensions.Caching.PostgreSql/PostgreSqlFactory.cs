@@ -6,7 +6,7 @@ namespace Community.Microsoft.Extensions.Caching.PostgreSql
 {
     public sealed class PostgreSqlFacory
     {
-        public IDistributedCache Create(PostgreSqlCacheOptions options, ILoggerFactory loggerFactory)
+        public static IDistributedCache Create(PostgreSqlCacheOptions options, ILoggerFactory loggerFactory)
         {
             IOptions<PostgreSqlCacheOptions> opt = Options.Create(options);
             
