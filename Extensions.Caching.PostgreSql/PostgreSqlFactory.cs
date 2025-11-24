@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
 
-namespace Community.Microsoft.Extensions.Caching.PostgreSql
+namespace HlidacStatu.Caching.PostgreSql
 {
     public sealed class PostgreSqlFacory
     {
@@ -11,12 +11,10 @@ namespace Community.Microsoft.Extensions.Caching.PostgreSql
             IOptions<PostgreSqlCacheOptions> opt = Options.Create(options);
             
             ILogger<DatabaseOperations> dbopsLogger = loggerFactory.CreateLogger<DatabaseOperations>();
-            ILogger<DatabaseExpiredItemsRemoverLoop> dbremoverLoopLogger = loggerFactory.CreateLogger<DatabaseExpiredItemsRemoverLoop>();
             
             DatabaseOperations dbops = new DatabaseOperations(opt, dbopsLogger);
-            DatabaseExpiredItemsRemoverLoop dbloop = new DatabaseExpiredItemsRemoverLoop(opt, dbops, dbremoverLoopLogger);
             
-            return new PostgreSqlCache(opt, dbops, dbloop);
+            return new PostgreSqlCache(opt, dbops);
         }
     }
 }

@@ -1,29 +1,32 @@
-﻿namespace Community.Microsoft.Extensions.Caching.PostgreSql;
+﻿namespace HlidacStatu.Caching.PostgreSql;
 
 public class SqlCommands
 {
     private readonly string _schemaName;
     private readonly string _tableName;
+    private readonly int _expiredItemsDeletionIntervalMinutes;
 
-    public SqlCommands(string schemaName, string tableName)
+    public SqlCommands(string schemaName, string tableName, int expiredItemsDeletionIntervalMinutes)
     {
         _schemaName = schemaName;
         _tableName = tableName;
+        _expiredItemsDeletionIntervalMinutes = expiredItemsDeletionIntervalMinutes;
     }
 
     public string CreateSchemaAndTableSql =>
         $"""
-        CREATE SCHEMA IF NOT EXISTS "{_schemaName}";
-        CREATE TABLE IF NOT EXISTS "{_schemaName}"."{_tableName}"
-        (
-            "Id" text COLLATE pg_catalog."default" NOT NULL,
-            "Value" bytea,
-            "ExpiresAtTime" timestamp with time zone,
-            "SlidingExpirationInSeconds" double precision,
-            "AbsoluteExpiration" timestamp with time zone,
-            CONSTRAINT "DistCache_pkey" PRIMARY KEY ("Id")
-        )
-        """;
+         CREATE SCHEMA IF NOT EXISTS "{_schemaName}";
+
+         CREATE TABLE IF NOT EXISTS "{_schemaName}"."{_tableName}"
+         (
+             "Id" text COLLATE pg_catalog."default" NOT NULL,
+             "Value" bytea,
+             "ExpiresAtTime" timestamp with time zone,
+             "SlidingExpirationInSeconds" double precision,
+             "AbsoluteExpiration" timestamp with time zone,
+             CONSTRAINT "DistCache_pkey" PRIMARY KEY ("Id")
+         );
+         """;
 
     public string GetCacheItemSql =>
         $"""
@@ -60,9 +63,24 @@ public class SqlCommands
         WHERE "Id" = @Id
         """;
 
-    public string DeleteExpiredCacheSql =>
+    public string CreateDeleteExpiredCacheCronJobSql =>
         $"""
-        DELETE FROM "{_schemaName}"."{_tableName}"
-        WHERE @UtcNow > "ExpiresAtTime"
+        -- pg_cron extension (safe to run multiple times)
+        CREATE EXTENSION IF NOT EXISTS pg_cron;
+        
+        -- create cleanup job if it does not exist
+        SELECT cron.schedule(
+            job_name := '{_schemaName}_{_tableName}_cleanup',
+            schedule := $cron$*/{_expiredItemsDeletionIntervalMinutes} * * * *$cron$,
+            command  := $cmd$
+                DELETE FROM "{_schemaName}"."{_tableName}"
+                WHERE now() > "ExpiresAtTime";
+            $cmd$
+        )
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM cron.job
+            WHERE jobname = '{_schemaName}_{_tableName}_cleanup'
+        );
         """;
 }

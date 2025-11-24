@@ -1,6 +1,6 @@
 using System;
 
-namespace Community.Microsoft.Extensions.Caching.PostgreSql;
+namespace HlidacStatu.Caching.PostgreSql;
 
 public record ItemIdUtcNow
 {

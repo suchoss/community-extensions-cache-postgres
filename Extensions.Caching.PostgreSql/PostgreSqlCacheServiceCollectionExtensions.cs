@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 
-namespace Community.Microsoft.Extensions.Caching.PostgreSql
+namespace HlidacStatu.Caching.PostgreSql
 {
 	/// <summary>
 	/// Extension methods for setting up PostgreSql distributed cache services in an <see cref="IServiceCollection" />.
@@ -87,7 +87,6 @@ namespace Community.Microsoft.Extensions.Caching.PostgreSql
         private static void AddPostgreSqlCacheServices(IServiceCollection services)
 		{
             services.AddSingleton<IDatabaseOperations, DatabaseOperations>();
-			services.AddSingleton<IDatabaseExpiredItemsRemoverLoop, DatabaseExpiredItemsRemoverLoop>();
 			services.AddSingleton<IDistributedCache, PostgreSqlCache>();
 		}
 	}

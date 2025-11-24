@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Distributed;
 
-namespace Community.Microsoft.Extensions.Caching.PostgreSql
+namespace HlidacStatu.Caching.PostgreSql
 {
     public interface IDatabaseOperations
     {
@@ -24,7 +24,5 @@ namespace Community.Microsoft.Extensions.Caching.PostgreSql
         void SetCacheItem(string key, byte[] value, DistributedCacheEntryOptions options);
 
         Task SetCacheItemAsync(string key, byte[] value, DistributedCacheEntryOptions options, CancellationToken cancellationToken);
-
-        Task DeleteExpiredCacheItemsAsync(CancellationToken cancellationToken);
     }
 }

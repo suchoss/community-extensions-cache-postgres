@@ -1,9 +1,9 @@
-﻿using Microsoft.Extensions.Internal;
+﻿using System;
+using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Options;
-using System;
 using Npgsql;
 
-namespace Community.Microsoft.Extensions.Caching.PostgreSql
+namespace HlidacStatu.Caching.PostgreSql
 {
     public class PostgreSqlCacheOptions : IOptions<PostgreSqlCacheOptions>
     {
@@ -26,9 +26,8 @@ namespace Community.Microsoft.Extensions.Caching.PostgreSql
 
         /// <summary>
         /// The periodic interval to scan and delete expired items in the cache. Default is 30 minutes. 
-        /// Minimum allowed is 5 minutes.
         /// </summary>
-        public TimeSpan? ExpiredItemsDeletionInterval { get; set; }
+        public int ExpiredItemsDeletionIntervalMinutes { get; set; } = 30; 
 
         /// <summary>
         /// The schema name of the table.

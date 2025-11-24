@@ -1,10 +1,10 @@
-﻿using Microsoft.Extensions.Caching.Distributed;
-using System;
-using Microsoft.Extensions.Options;
-using System.Threading.Tasks;
+﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Options;
 
-namespace Community.Microsoft.Extensions.Caching.PostgreSql
+namespace HlidacStatu.Caching.PostgreSql
 {
     internal sealed class PostgreSqlCache : IDistributedCache
     {
@@ -14,13 +14,10 @@ namespace Community.Microsoft.Extensions.Caching.PostgreSql
         [Obsolete("Do not use constructor directly instead pull IDistributedCache from DI. For this add 'services.AddDistributedPostgreSqlCache'")]
         public PostgreSqlCache(
             IOptions<PostgreSqlCacheOptions> options,
-            IDatabaseOperations databaseOperations,
-            IDatabaseExpiredItemsRemoverLoop loop)
+            IDatabaseOperations databaseOperations)
         {
             _dbOperations = databaseOperations ?? throw new ArgumentNullException(nameof(databaseOperations));
-
-            _ = loop ?? throw new ArgumentNullException(nameof(loop));
-
+            
             var cacheOptions = options?.Value ?? throw new ArgumentNullException(nameof(options));
 
             if (cacheOptions.DefaultSlidingExpiration <= TimeSpan.Zero)
@@ -32,8 +29,6 @@ namespace Community.Microsoft.Extensions.Caching.PostgreSql
             }
 
             _defaultSlidingExpiration = cacheOptions.DefaultSlidingExpiration;
-
-            loop.Start();
         }
 
         public byte[] Get(string key)

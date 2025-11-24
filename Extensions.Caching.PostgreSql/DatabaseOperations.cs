@@ -2,22 +2,23 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using Npgsql;
+using System.Threading;
 using System.Threading.Tasks;
+using Dapper;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Internal;
-using System.Threading;
-using Dapper;
-using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Npgsql;
 
-namespace Community.Microsoft.Extensions.Caching.PostgreSql
+namespace HlidacStatu.Caching.PostgreSql
 {
     internal sealed class DatabaseOperations : IDatabaseOperations
     {
         private readonly ILogger<DatabaseOperations> _logger;
         private readonly bool _updateOnGetCacheItem;
         private readonly bool _readOnlyMode;
+        private readonly bool _disableRemovingExpiredCacheItems;
 
         public DatabaseOperations(IOptions<PostgreSqlCacheOptions> options, ILogger<DatabaseOperations> logger)
         {
@@ -45,14 +46,16 @@ namespace Community.Microsoft.Extensions.Caching.PostgreSql
 
             SystemClock = cacheOptions.SystemClock;
 
-            SqlCommands = new SqlCommands(cacheOptions.SchemaName, cacheOptions.TableName);
+            SqlCommands = new SqlCommands(cacheOptions.SchemaName, cacheOptions.TableName, cacheOptions.ExpiredItemsDeletionIntervalMinutes);
 
             this._logger = logger;
             this._updateOnGetCacheItem = cacheOptions.UpdateOnGetCacheItem;
             this._readOnlyMode = cacheOptions.ReadOnlyMode;
+            this._disableRemovingExpiredCacheItems = cacheOptions.DisableRemoveExpired;
             if (cacheOptions.CreateInfrastructure)
             {
                 CreateSchemaAndTableIfNotExist();
+                DeleteExpiredCacheItems();
             }
         }
 
@@ -136,20 +139,24 @@ namespace Community.Microsoft.Extensions.Caching.PostgreSql
             await GetCacheItemAsync(key, includeValue: false, cancellationToken);
 
 
-        public async Task DeleteExpiredCacheItemsAsync(CancellationToken cancellationToken)
+        public void DeleteExpiredCacheItems()
         {
-            if (_readOnlyMode)
+            if (_readOnlyMode || _disableRemovingExpiredCacheItems)
                 return;
 
-            var utcNow = SystemClock.UtcNow;
+            using (var connection = ConnectionFactory())
+            {
+                connection.Open();
+                using (var transaction = connection.BeginTransaction())
+                {
+                    var createSchemaAndTable = new CommandDefinition(
+                        SqlCommands.CreateDeleteExpiredCacheCronJobSql,
+                        transaction: transaction);
+                    connection.Execute(createSchemaAndTable);
 
-            await using var connection = ConnectionFactory();
-
-            var deleteExpiredCache = new CommandDefinition(
-                SqlCommands.DeleteExpiredCacheSql,
-                new CurrentUtcNow { UtcNow = utcNow },
-                cancellationToken: cancellationToken);
-            await connection.ExecuteAsync(deleteExpiredCache);
+                    transaction.Commit();
+                }
+            }
         }
 
         public void SetCacheItem(string key, byte[] value, DistributedCacheEntryOptions options)
