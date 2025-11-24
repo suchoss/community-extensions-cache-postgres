@@ -3,7 +3,7 @@
 ## Introduction
 
 We used `Community.Microsoft.Extensions.Caching.PostgreSQL` and modified its way of working. Mainly added Create factory, so we are not dependent on MS Dependency Injection magic.
-Secondly we moved
+Secondly we moved expired items deletion to postgresql itself, since we are going to run this code for the same cache from more places and we do not want to run this deletion too often (from many places). 
 
 
 ### 2. Basic Configuration
